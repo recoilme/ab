@@ -42,7 +42,7 @@ type Stat struct {
 
 type Stats struct {
 	Statistics []Stat
-	Weights    map[string]float64
+	Weights    []map[string]float64
 }
 
 var (
@@ -52,17 +52,17 @@ var (
 func main() {
 	fmt.Println("hello")
 	statsMap = make(map[string]Stat)
-	goal := "33626877"
-	ids := "42351524"
+	//goal := "33626877"
+	//ids := "42351524"
 	/*
 		tm := time.Now()
 		year, month, day := tm.Date()
 		date := fmt.Sprintf("%d.%d.%d", day, month, year)
 		key := date + goal
 	*/
-	key := goal
-	statsMap[key] = getStat(ids, goal)
-	fmt.Println(statsMap[key])
+	//key := goal
+	//statsMap[key] = getStat(ids, goal)
+	//fmt.Println(statsMap[key])
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":9098", nil)
 }
@@ -123,6 +123,51 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			stats.Statistics = append(stats.Statistics, stat)
 		}
 	}
+	if stats.Statistics != nil {
+		var metrica string
+		var min, sum float64
+		min = 1
+
+		for _, s := range stats.Statistics {
+			if s.Query.Metrics != nil && len(s.Query.Metrics) > 0 && s.Totals != nil && len(s.Totals) > 0 {
+				metrica = s.Query.Metrics[0]
+				fmt.Println(metrica)
+				metrica = strings.Replace(metrica, "ym:s:goal", "", -1)
+				metrica = strings.Replace(metrica, "userConversionRate", "", -1)
+				mapp := make(map[string]float64)
+
+				mapp[metrica] = s.Totals[0]
+				sum += s.Totals[0]
+				if s.Totals[0] > 0 && s.Totals[0] < min {
+					min = s.Totals[0]
+				}
+				stats.Weights = append(stats.Weights, mapp)
+			}
+
+		}
+		fmt.Println(min, sum)
+		if sum == 0 {
+			sum = float64(len(stats.Weights))
+		}
+		if min == 0 {
+			min = float64(1)
+		}
+
+		var newW []map[string]float64
+		for _, v := range stats.Weights {
+			for k, vv := range v {
+				if vv < min {
+					vv = min
+				}
+				mapp := make(map[string]float64)
+				mapp[k] = vv / sum
+				newW = append(newW, mapp)
+				fmt.Println(k, vv/sum)
+			}
+		}
+		stats.Weights = newW
+	}
+
 	b, err := json.Marshal(stats)
 	if err == nil {
 		w.Header().Set("Content-Type", "application/json")
