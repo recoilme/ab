@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"strings"
 )
 
@@ -51,18 +52,19 @@ var (
 
 func main() {
 	fmt.Println("hello")
+	runtime.GOMAXPROCS(1)
 	statsMap = make(map[string]Stat)
-	//goal := "33626877"
-	//ids := "42351524"
+	goal := "33626871"
+	ids := "42351524"
 	/*
 		tm := time.Now()
 		year, month, day := tm.Date()
 		date := fmt.Sprintf("%d.%d.%d", day, month, year)
 		key := date + goal
 	*/
-	//key := goal
-	//statsMap[key] = getStat(ids, goal)
-	//fmt.Println(statsMap[key])
+	key := goal
+	statsMap[key] = getStat(ids, goal)
+	fmt.Println(statsMap[key])
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":9098", nil)
 }
